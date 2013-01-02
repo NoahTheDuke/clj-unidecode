@@ -18,6 +18,14 @@ submit an issue on github, pull requests are also welcome.
 ```
 See doc/intro.md for resetting the cache.
 
+## More information
+
+For a more in-depth discussion of the problem see Giuseppe Cardone's Junidecode site
+http://www.ippatsuman.com/projects/junidecode/index.html
+
+Also this is my first attempt at releasing any clojure code so any _constructive_
+criticism is appreciated.
+
 ## License
 
 Copyright © 2012 Michael Grubb.
