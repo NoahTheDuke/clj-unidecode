@@ -28,7 +28,7 @@
 (ns clj-unidecode.core
   (:gen-class))
 
-(def ^{:dynamic true} *unidecode-cache* (atom {}))
+(def ^:dynamic *unidecode-cache* (atom {}))
 
 (defn- load-decode-map
   ([code-point] (load-decode-map code-point *unidecode-cache*))

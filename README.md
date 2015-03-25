@@ -7,6 +7,9 @@ perl module.  All bugs, errors, or tragic programming practices are my
 sole responsibility.  Speaking of which should you find any of them please
 submit an issue on github, pull requests are also welcome.
 
+## Depency Info
+[![Clojars Project](http://clojars.org/clj-unidecode/latest-version.svg)](http://clojars.org/clj-unidecode)
+
 ## Usage
 
 ```clojure
