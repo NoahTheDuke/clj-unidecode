@@ -26,8 +26,8 @@
 ;;;
 
 (ns clj-unidecode.core-test
-  (:use midje.sweet
-        clj-unidecode.core))
+  (:require [clj-unidecode.core :refer :all]
+            [clojure.test :refer :all]))
 
 (defn check-7bit [c]
   (not (= (bit-and (.hashCode c) 0x80) 0x00)))
@@ -62,21 +62,19 @@
                  (make-pair "\n")
                  (make-pair "Answer is 42\n")])
 
-(facts "ASCII Strings are unchanged"
-  (doall
-    (for [[t e] test-pairs]
-      (unidecode t) => e)))
+(deftest unchanged
+  (doseq [[t e] test-pairs]
+    (is (= e (unidecode t)) "ASCII Strings are unchanged")))
 
-(facts "Non-ASCII Charsets are changed to ASCII"
-  (doall
-    (for [[t e] test-pairs-ex]
-      (unidecode t) => e)))
+(deftest changed
+  (doseq [[t e] test-pairs-ex]
+    (is (= e (unidecode t)) "Non-ASCII Charsets are changed to ASCII")))
 
-(facts "Reset cache results in empty cache"
-  (reset-unidecode-cache)
-  @*unidecode-cache* => {}
-  (unidecode "a test") => "a test"
-  (count @*unidecode-cache*) => 1
-  (reset-unidecode-cache)
-  (count @*unidecode-cache*) => 0
-  @*unidecode-cache* => {})
+; (facts "Reset cache results in empty cache"
+;   (reset-unidecode-cache)
+;   @*unidecode-cache* => {}
+;   (unidecode "a test") => "a test"
+;   (count @*unidecode-cache*) => 1
+;   (reset-unidecode-cache)
+;   (count @*unidecode-cache*) => 0
+;   @*unidecode-cache* => {})

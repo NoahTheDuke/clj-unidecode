@@ -1,69 +1,27 @@
-;;;
-;;; Copyright (c) 2012 Michael Grubb
-;;; All rights reserved.
-;;; 
-;;; Redistribution and use in source and binary forms, with or without
-;;; modification, are permitted provided that the following conditions
-;;; are met:
-;;; 1. Redistributions of source code must retain the above copyright
-;;;    notice, this list of conditions and the following disclaimer.
-;;; 2. Redistributions in binary form must reproduce the above copyright
-;;;    notice, this list of conditions and the following disclaimer in the
-;;;    documentation and/or other materials provided with the distribution.
-;;; 3. The name of the author may not be used to endorse or promote products
-;;;    derived from this software without specific prior written permission.
-;;; 
-;;; THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
-;;; IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-;;; OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-;;; IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
-;;; INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-;;; NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-;;; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-;;; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-;;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-;;; THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-;;;
-
 (ns clj-unidecode.core
   (:gen-class))
 
-(def ^:dynamic *unidecode-cache* (atom {}))
+(def cache-atom (atom {}))
 
 (defn- load-decode-map
-  ([code-point] (load-decode-map code-point *unidecode-cache*))
-  ([code-point cache-atom]
-    (if (contains? @cache-atom code-point)
-      (@cache-atom code-point)
-      (let [classname (symbol (format "clj-unidecode.maps.X%02x" code-point))]
-        (try
-          (require classname)
-          (let [decoder ((ns-publics classname) 'decode)]
-            (swap! cache-atom #(assoc % code-point @decoder)))
-          (catch java.io.FileNotFoundException e
-            (swap! cache-atom #(assoc % code-point nil))))
-        (@cache-atom code-point)))))
-
-(defn- tr-char
-  ([hi low] (tr-char hi low *unidecode-cache*))
-  ([hi low cache-atom]
-   (if-let [decoder (load-decode-map hi cache-atom)]
-     (decoder low)
-     "[?]")))
-
+  ([code-point]
+   (if (contains? @cache-atom code-point)
+     (@cache-atom code-point)
+     (let [classname (symbol (format "clj-unidecode.maps.x%03x" code-point))]
+       (try
+         (require classname)
+         (let [data (var-get (ns-resolve classname 'data))]
+           (swap! cache-atom assoc code-point data))
+         (catch java.io.FileNotFoundException e
+           (swap! cache-atom assoc code-point nil)))
+       (@cache-atom code-point)))))
 
 (defn unidecode
   "Strips `string' of diacritics and returns the ASCII representation."
   [string]
-  (let [sb (StringBuilder.)]
-    (doall
-      (for [x (seq string)
-            :let [cp (.hashCode x)
-                  hi (bit-and (bit-shift-right cp 8) 0xff)
-                  low (bit-and cp 0xff)]]
-          (-> sb (.append (tr-char hi low)))))
-    (.toString sb)))
-
-(defn reset-unidecode-cache
-  ([] (reset-unidecode-cache *unidecode-cache*))
-  ([cache-atom] (swap! cache-atom empty)))
+  (apply str (for [chr (seq string)
+                   :let [codepoint (int chr)
+                         section (bit-and (bit-shift-right codepoint 8) 0xff)
+                         position (bit-and codepoint 0xff)]]
+               (when-let [table (load-decode-map section)]
+                 (table position)))))
